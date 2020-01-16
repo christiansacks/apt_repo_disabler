@@ -1,0 +1,35 @@
+#!/bin/bash
+
+declare -A sources=()
+TMPFILE="/tmp/answers.txt"
+
+for file in $(ls /etc/apt/sources.list.d/); do
+  f=${file%.*}
+  e=${file##*.}
+
+  case $e in
+    "list") sources+="$f on ";;
+         *) sources+="$f off ";;
+  esac
+done
+
+dialog --backtitle "APT Repo Disabler / Enabler" --no-items --checklist "Choose which repos to be active" 20 60 26 $sources 2>$TMPFILE
+
+if [ $? -gt 0 ]; then 
+  echo
+  exit
+fi
+
+cd /etc/apt/sources.list.d/
+
+for file in $(ls *.list); do 
+  sudo mv ${file%.*}.list ${file%.*}.disabled
+done
+
+for file in $(cat $TMPFILE); do
+  sudo mv $file.disabled $file.list
+done
+
+rm $TMPFILE 
+
+echo
